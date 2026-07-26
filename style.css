@@ -1,11 +1,11 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: 'Segoe UI', system-ui, sans-serif;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    background: #0a0e1a;
     min-height: 100vh; display: flex; flex-direction: column;
     align-items: center; justify-content: center; color: #e0e0e0;
     padding: 20px; position: relative; overflow-x: hidden;
 }
+
 .hamburger {
     position: fixed; top: 20px; left: 20px; z-index: 1001;
     width: 44px; height: 44px; cursor: pointer;
