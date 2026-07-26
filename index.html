@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinxro — Определение региона и репутации по номеру</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Гамбургер-меню -->
+    <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+        <span></span><span></span><span></span>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
+
+    <!-- Боковая панель -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-sm">CINXR<span style="color:#00d4ff;">O</span></div>
+            <div class="logo-sub-sm">анонимно</div>
+        </div>
+        <div class="sidebar-section">Режим поиска</div>
+        <div class="sidebar-item active" id="modeIntl" onclick="setMode('intl')">
+            <div class="icon">&#127758;</div>
+            <div class="text">
+                <span class="title">Международный поиск</span>
+                <span class="desc">Поиск по 100+ странам мира</span>
+            </div>
+            <span class="badge">Готов</span>
+        </div>
+        <div class="sidebar-item" id="modeRu" onclick="setMode('ru')">
+            <div class="icon">&#127479;&#127482;</div>
+            <div class="text">
+                <span class="title">Поиск по России</span>
+                <span class="desc">Детальный поиск по РФ</span>
+            </div>
+            <span class="badge" style="background:rgba(0,212,255,0.15);color:#00d4ff;">Активен</span>
+        </div>
+        <div class="sidebar-section">Инструменты</div>
+        <div class="sidebar-item" id="toolHistory" onclick="showTool('history')">
+            <div class="icon">&#128220;</div>
+            <div class="text">
+                <span class="title">История запросов</span>
+                <span class="desc">Последние 20 проверок</span>
+            </div>
+        </div>
+        <div class="sidebar-item" id="toolFavorites" onclick="showTool('favorites')">
+            <div class="icon">&#11088;</div>
+            <div class="text">
+                <span class="title">Избранное</span>
+                <span class="desc">Сохранённые номера</span>
+            </div>
+        </div>
+        <div class="sidebar-item" id="toolExport" onclick="showTool('export')">
+            <div class="icon">&#128229;</div>
+            <div class="text">
+                <span class="title">Экспорт результатов</span>
+                <span class="desc">CSV / JSON / PDF</span>
+            </div>
+        </div>
+        <div class="sidebar-item" id="toolDonate" onclick="showDonatePage()">
+            <div class="icon">&#128179;</div>
+            <div class="text">
+                <span class="title">Пожертвовать</span>
+                <span class="desc">Поддержать проект</span>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            Cinxro &copy; 2026<br>Безопасный поиск номеров
+        </div>
+    </nav>
+
+    <!-- Логотип и подзаголовок -->
+    <div class="logo-wrapper">
+        <div class="logo">CINXR<span style="color:#00d4ff;">O</span></div>
+        <div class="logo-sub">анонимно</div>
+    </div>
+    <div class="subtitle" id="pageSubtitle">Определение региона и репутации по номеру</div>
+    <div class="mode-indicator" id="modeIndicator">
+        <span id="modeIcon">&#127758;</span>
+        <span id="modeText">Международный поиск</span>
+    </div>
+
+    <!-- Основная сетка -->
+    <div class="main-layout">
+        <div class="side-text" id="sideText">знай с кем общаешься</div>
+        
+        <!-- Главная форма поиска -->
+        <div class="container" id="searchContainer">
+            <div class="input-group">
+                <label id="inputLabel">Введите номер телефона</label>
+                <input type="text" id="phoneInput" placeholder="+7 (999) 123-45-67" maxlength="20">
+            </div>
+            <button class="btn" id="searchBtn" onclick="analyzePhone()">Проверить номер</button>
+            <div class="examples" id="examplesBox">
+                Примеры:
+                <span onclick="setPhone('+79031234567')">+7 903...</span>
+                <span onclick="setPhone('+380441234567')">+380 44...</span>
+                <span onclick="setPhone('+12125551234')">+1 212...</span>
+            </div>
+            <div class="error" id="errorBox"></div>
+            
+            <!-- Карточка результата -->
+            <div class="result" id="resultBox">
+                <div class="result-item">
+                    <span class="result-label">&#128154; Статус номера</span>
+                    <span class="result-value" id="resStatus"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">&#128737; Репутация / Спам</span>
+                    <span class="result-value" id="resReputation"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">&#128222; Номер</span>
+                    <span class="result-value" id="resNumber"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">&#127758; Страна</span>
+                    <span class="result-value" id="resCountry"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">&#127987; Код страны</span>
+                    <span class="result-value" id="resCode"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">&#128205; Регион</span>
+                    <span class="result-value" id="resRegion"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">&#127963; Город / Район</span>
+                    <span class="result-value" id="resCity"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">&#128225; Оператор</span>
+                    <span class="result-value" id="resOperator"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">&#128257; MNP (Перенос номера)</span>
+                    <span class="result-value" id="resMnp"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">&#9200; Часовой пояс</span>
+                    <span class="result-value" id="resTimezone"></span>
+                </div>
+                <button class="btn btn-secondary" style="width:100%; margin-top:15px;" onclick="addCurrentToFavorites()">⭐ Добавить в Избранное</button>
+            </div>
+
+            <!-- Интерактивная карта -->
+            <div class="map-section" id="mapSection">
+                <div class="map-header">
+                    <div class="scan-line"></div>
+                    <span class="map-title">Таргетирование сигнала</span>
+                    <button class="map-expand-btn" onclick="openMapModal()">[ ⤢ Увеличить ]</button>
+                </div>
+                
+                <div class="map-layers-bar">
+                    <button class="layer-btn active" onclick="changeMapLayer('layer-cyber', this)">Cyber</button>
+                    <button class="layer-btn" onclick="changeMapLayer('layer-tactical', this)">Tactical</button>
+                    <button class="layer-btn" onclick="changeMapLayer('layer-radar', this)">Radar</button>
+                    <button class="layer-btn" onclick="changeMapLayer('layer-minimal', this)">Minimal</button>
+                </div>
+
+                <div class="map-container" id="mapMainContainer" onclick="openMapModal()">
+                    <div id="svgContainer" style="width:100%; height:100%;"></div>
+                    <div class="map-coords" id="mapCoords">GPS: --.---- | --.----</div>
+                </div>
+                <div class="map-terminal" id="mapTerminal">
+                    &gt; Инициализация канала...<span class="cursor"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Раздел: История -->
+        <div class="tool-section" id="historySection">
+            <div class="tool-card">
+                <div class="tool-icon">&#128220;</div>
+                <div class="tool-title">История проверок</div>
+                <div class="list-container" id="historyList"></div>
+                <button class="btn btn-secondary btn-danger" onclick="clearHistory()">Очистить историю</button>
+            </div>
+        </div>
+
+        <!-- Раздел: Избранное -->
+        <div class="tool-section" id="favoritesSection">
+            <div class="tool-card">
+                <div class="tool-icon">&#11088;</div>
+                <div class="tool-title">Избранные номера</div>
+                <div class="list-container" id="favoritesList"></div>
+            </div>
+        </div>
+
+        <!-- Раздел: Экспорт -->
+        <div class="tool-section" id="exportSection">
+            <div class="tool-card">
+                <div class="tool-icon">&#128229;</div>
+                <div class="tool-title">Экспорт данных</div>
+                <p style="font-size:0.85rem; color:#8892b0; margin-bottom:15px;">Выберите удобный формат для сохранения запросов или отчета:</p>
+                
+                <div class="export-grid">
+                    <button class="btn btn-secondary" onclick="exportJSON()">💾 Экспорт в JSON</button>
+                    <button class="btn btn-secondary" onclick="exportCSV()">📊 Экспорт в CSV</button>
+                </div>
+                <button class="btn" onclick="exportPDF()" style="margin-top:10px;">📄 Сформировать PDF / Печать</button>
+            </div>
+        </div>
+
+        <!-- Раздел: Донат -->
+        <div class="donate-section" id="donateSection">
+            <div class="donate-card">
+                <div class="donate-icon">&#128179;</div>
+                <div class="donate-title">Поддержка проекта</div>
+                <div class="donate-text">
+                    На пожертвование писать в WhatsApp в чат сап по номеру:<br>
+                    <a href="https://wa.me/79218817476" target="_blank">+7 921 881-74-76</a>
+                </div>
+                <button class="btn" onclick="setMode('intl')">Вернуться к поиску</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно карты -->
+    <div class="map-modal-overlay" id="mapModalOverlay" onclick="closeMapModal(event)">
+        <div class="map-modal-content" onclick="event.stopPropagation()">
+            <div class="map-modal-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="scan-line"></div>
+                    <span class="map-title" style="font-size:0.9rem;">Интерактивный Сканер</span>
+                </div>
+                <button class="map-modal-close" onclick="closeMapModal()">✕</button>
+            </div>
+            <div class="modal-map-viewport" id="modalMapArea">
+                <div id="modalSvgContainer" style="width:100%; height:100%; transform-origin: 0 0;"></div>
+                <div class="map-zoom-controls">
+                    <button class="map-zoom-btn" onclick="zoomMap(1.25)">+</button>
+                    <button class="map-zoom-btn" onclick="zoomMap(0.8)">-</button>
+                    <button class="map-zoom-btn" onclick="resetZoom()" style="font-size:0.8rem;">1:1</button>
+                </div>
+                <div class="map-coords" id="modalCoords" style="bottom:15px; left:20px; font-size:0.85rem;">GPS: --.---- | --.----</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">Cinxro &copy; 2026 — Определение региона по телефонному номеру</div>
+
+    <!-- Шаблон векторной карты SVG -->
+    <template id="mapSvgTemplate">
+        <svg class="map-svg layer-cyber" id="activeSvg" viewBox="0 0 400 230" preserveAspectRatio="xMidYMid meet">
+            <defs>
+                <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                    <polygon points="0 0, 6 3, 0 6" fill="#00ff88"/>
+                </marker>
+            </defs>
+            <g class="map-grid-group"></g>
+            <path class="map-russia-border" d="
+                M 18 108 L 15 106 L 16 112 L 20 110 Z 
+                M 22 110 L 26 102 C 32 88, 38 72, 45 66 L 40 52 L 46 45 L 56 42 L 62 48 L 74 38 L 88 38 L 105 32 L 125 28 L 150 25 L 175 22 L 200 21 L 225 24 L 255 18 L 280 20 L 305 22 L 322 30 L 332 25 L 345 32 L 362 28 L 378 35 L 388 48 L 375 62 L 382 78 L 372 90 L 380 110 L 370 128 L 358 135 L 355 155 L 348 168 L 340 162 L 342 145 L 328 152 L 312 140 L 298 145 L 282 138 L 265 142 L 248 135 L 232 148 L 210 142 L 195 155 L 180 152 L 162 140 L 145 148 L 132 142 L 115 145 L 102 132 L 92 138 L 82 130 L 72 136 L 68 148 L 52 142 L 48 132 L 38 128 L 28 122 Z
+                M 205 16 C 215 8, 225 6, 235 12 L 228 20 Z
+                M 345 152 L 350 178 L 342 172 Z
+            "/>
+            <g class="network-lines-group"></g>
+            <g class="city-nodes-group"></g>
+            <g class="target-group" style="display:none;">
+                <circle class="map-target-ring target-ring" cx="0" cy="0"/>
+                <circle class="map-target target-dot" cx="0" cy="0"/>
+            </g>
+            <line class="map-arrow target-arrow" x1="0" y1="0" x2="0" y2="0" style="display:none;"/>
+            <g class="label-group" style="display:none;">
+                <rect class="map-label-bg label-bg" x="0" y="0" width="105" height="16" rx="2"/>
+                <text class="map-label label-text" x="0" y="0">► НАЙДЕН: МОСКВА</text>
+            </g>
+        </svg>
+    </template>
+
+    <!-- Подключение скриптов в правильном порядке -->
+    <script src="js/db.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/tools.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
