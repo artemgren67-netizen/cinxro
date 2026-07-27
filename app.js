@@ -1,8 +1,29 @@
 // Основная управляющая логика приложения Cinxro
-
 var currentMode = 'intl';
 var menuOpen = false;
 var lastAnalyzedData = null;
+
+// ===== LIBPHONENUMBER =====
+function checkPhoneValid(rawNumber, countryCode) {
+    try {
+        if (!window.libphonenumber) return null;
+        var phone = libphonenumber.parsePhoneNumber(rawNumber, countryCode);
+        if (phone && phone.isValid()) {
+            return phone;
+        }
+    } catch(e) {}
+    return null;
+}
+
+function getPhoneType(type) {
+    if (type === 'MOBILE') return { text: '📱 Мобильный', class: 'type-mobile' };
+    if (type === 'FIXED_LINE') return { text: '🏢 Стационарный', class: 'type-landline' };
+    if (type === 'TOLL_FREE') return { text: '☎️ Бесплатный', class: 'type-hotline' };
+    if (type === 'VOIP') return { text: '💻 Виртуальный (VoIP)', class: 'type-virtual' };
+    if (type === 'PREMIUM_RATE') return { text: '💰 Платный', class: 'type-hotline' };
+    return { text: '📞 Неизвестный', class: '' };
+}
+
 
 function calculateReputation(phoneNumber) {
     var sum = 0;
@@ -152,13 +173,103 @@ function showError(msg) {
 function hideError() {
     document.getElementById('errorBox').classList.remove('show');
 }
+function analyzeIntlPhone(rawInput) {
+    var cleaned = rawInput.replace(/[^\d+]/g, '');
+    if (!cleaned.startsWith('+')) {
+        cleaned = '+' + cleaned;
+    }
+    var digitsOnly = cleaned.replace(/\D/g, '');
 
-function analyzePhone() {
-    hideError();
-    var rawInput = document.getElementById('phoneInput').value.trim();
-    if (!rawInput) {
-        showError('Пожалуйста, введите номер телефона.');
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+        showError('Некорректная длина международного номера.');
         return;
+    }
+
+    // === ПРОВЕРКА ЧЕРЕЗ LIBPHONENUMBER ===
+    var phoneValid = checkPhoneValid(cleaned);
+
+    var matchedPrefix = null;
+    for (var i = 0; i < internationalPrefixes.length; i++) {
+        var p = internationalPrefixes[i];
+        if (digitsOnly.startsWith(p.code)) {
+            if (!matchedPrefix || p.code.length > matchedPrefix.code.length) {
+                matchedPrefix = p;
+            }
+        }
+    }
+
+    if (!matchedPrefix) {
+        showError('Код страны не найден в базе данных.');
+        return;
+    }
+
+    var nationalPart = digitsOnly.slice(matchedPrefix.code.length);
+    var region = matchedPrefix.defaultRegion;
+    var city = matchedPrefix.defaultCity;
+
+    if (matchedPrefix.subCodes) {
+        for (var sub in matchedPrefix.subCodes) {
+            if (nationalPart.startsWith(sub)) {
+                region = matchedPrefix.subCodes[sub].region;
+                city = matchedPrefix.subCodes[sub].city;
+                break;
+            }
+        }
+    }
+
+    var operator = 'Международный оператор связи';
+    var rep = calculateReputation(digitsOnly);
+    var mnp = calculateMnpStatus(digitsOnly, operator);
+
+    // Тип номера
+    var typeInfo = phoneValid ? getPhoneType(phoneValid.getType()) : { text: '📞 Неизвестный', class: '' };
+
+    // Статус
+    if (phoneValid) {
+        document.getElementById('resStatus').textContent = '✓ Валиден';
+        document.getElementById('resStatus').className = 'result-value status-valid';
+    } else {
+        document.getElementById('resStatus').textContent = '⚠ Формат неизвестен';
+        document.getElementById('resStatus').className = 'result-value status-invalid';
+    }
+
+    var repEl = document.getElementById('resReputation');
+    repEl.textContent = rep.text;
+    repEl.className = 'result-value ' + rep.class;
+
+    // Номер
+    document.getElementById('resNumber').textContent = phoneValid ? phoneValid.formatInternational() : ('+' + digitsOnly);
+    document.getElementById('resCountry').textContent = matchedPrefix.flag + ' ' + matchedPrefix.country;
+    document.getElementById('resCode').textContent = '+' + matchedPrefix.code;
+    document.getElementById('resRegion').textContent = region;
+    document.getElementById('resCity').textContent = city;
+    document.getElementById('resOperator').textContent = operator;
+    document.getElementById('resMnp').textContent = mnp;
+    document.getElementById('resTimezone').textContent = matchedPrefix.tz;
+
+    // Тип номера
+    var typeEl = document.getElementById('resType');
+    typeEl.textContent = typeInfo.text;
+    typeEl.className = 'result-value ' + typeInfo.class;
+
+    document.getElementById('resultBox').classList.add('show');
+    document.getElementById('mapSection').classList.remove('show');
+
+    lastAnalyzedData = {
+        number: phoneValid ? phoneValid.formatInternational() : ('+' + digitsOnly),
+        reputationText: rep.text,
+        country: matchedPrefix.country,
+        region: region,
+        city: city,
+        operator: operator,
+        mnp: mnp
+    };
+
+    saveToHistory(lastAnalyzedData);
+}
+
+
+
     }
 
     if (currentMode === 'ru') {
@@ -167,11 +278,78 @@ function analyzePhone() {
         analyzeIntlPhone(rawInput);
     }
 }
-
 function analyzeRuPhone(rawInput) {
     var cleaned = rawInput.replace(/\D/g, '');
     if (cleaned.length === 11 && cleaned.startsWith('8')) {
         cleaned = '7' + cleaned.slice(1);
+    }
+    if (cleaned.length !== 11 || !cleaned.startsWith('7')) {
+        showError('Введен неверный российский номер. Формат: +7 (XXX) XXX-XX-XX или 8XXXXXXXXXX');
+        return;
+    }
+
+    var defCode = cleaned.substring(1, 4);
+    var dbEntry = ruPhoneDatabase[defCode];
+
+    var operator = dbEntry ? dbEntry.operator : 'Региональный / Неизвестный оператор';
+    var region = dbEntry ? dbEntry.region : 'Российская Федерация';
+    var city = dbEntry ? dbEntry.city : 'Москва';
+
+    var rep = calculateReputation(cleaned);
+    var mnp = calculateMnpStatus(cleaned, operator);
+
+    var formattedNumber = '+7 (' + defCode + ') ' + cleaned.substring(4, 7) + '-' + cleaned.substring(7, 9) + '-' + cleaned.substring(9, 11);
+
+    // === ПРОВЕРКА ЧЕРЕЗ LIBPHONENUMBER ===
+    var phoneValid = checkPhoneValid(formattedNumber, 'RU');
+    var typeInfo = phoneValid ? getPhoneType(phoneValid.getType()) : getNumberType(cleaned, '7');
+
+    // Статус
+    if (phoneValid) {
+        document.getElementById('resStatus').textContent = '✓ Валиден';
+        document.getElementById('resStatus').className = 'result-value status-valid';
+    } else {
+        document.getElementById('resStatus').textContent = 'В сети / Валиден';
+        document.getElementById('resStatus').className = 'result-value status-valid';
+    }
+
+    var repEl = document.getElementById('resReputation');
+    repEl.textContent = rep.text;
+    repEl.className = 'result-value ' + rep.class;
+
+    // Номер: формат от libphonenumber если есть, иначе наш
+    document.getElementById('resNumber').textContent = phoneValid ? phoneValid.formatInternational() : formattedNumber;
+    document.getElementById('resCountry').textContent = 'Россия 🇷🇺';
+    document.getElementById('resCode').textContent = '+7';
+    document.getElementById('resRegion').textContent = region;
+    document.getElementById('resCity').textContent = city;
+    document.getElementById('resOperator').textContent = operator;
+    document.getElementById('resMnp').textContent = mnp;
+    document.getElementById('resTimezone').textContent = 'UTC+3 (МСК)';
+
+    // Тип номера
+    var typeEl = document.getElementById('resType');
+    typeEl.textContent = typeInfo.text;
+    typeEl.className = 'result-value ' + typeInfo.class;
+
+    document.getElementById('resultBox').classList.add('show');
+
+    showMap(city);
+
+    lastAnalyzedData = {
+        number: phoneValid ? phoneValid.formatInternational() : formattedNumber,
+        reputationText: rep.text,
+        country: 'Россия 🇷🇺',
+        region: region,
+        city: city,
+        operator: operator,
+        mnp: mnp
+    };
+
+    saveToHistory(lastAnalyzedData);
+}
+
+
     }
     if (cleaned.length !== 11 || !cleaned.startsWith('7')) {
         showError('Введен неверный российский номер. Формат: +7 (XXX) XXX-XX-XX или 8XXXXXXXXXX');
