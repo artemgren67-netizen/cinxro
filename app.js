@@ -2,8 +2,8 @@
 var currentMode = 'intl';
 var menuOpen = false;
 var lastAnalyzedData = null;
+
 // ===== ПРОВЕРКА ТИПА НОМЕРА =====
-// Встроенная база префиксов (не требует интернета)
 var mobilePrefixes = {
     '7': ['900','901','902','903','904','905','906','908','909','910','911','912','913','914','915','916','917','918','919','920','921','922','923','924','925','926','927','928','929','930','931','932','933','934','935','936','937','938','939','950','951','952','953','960','961','962','963','964','965','966','967','968','969','977','978','980','981','982','983','984','985','986','987','988','989','991','992','993','994','995','996','999'],
     '1': ['200','201','202','203','205','206','207','208','209','210','212','213','214','215','216','217','218','219','220','224','225','228','229','231','234','239','240','248','251','252','253','254','256','260','262','267','269','270','272','274','276','281','283','301','302','303','304','305','307','308','309','310','312','313','314','315','316','317','318','319','320','321','323','325','327','330','331','334','336','337','339','346','347','351','352','360','361','364','369','380','385','386','401','402','404','405','406','407','408','409','410','412','413','414','415','417','419','423','424','425','430','432','434','435','440','442','443','445','458','469','470','475','478','479','480','484','501','502','503','504','505','506','507','508','509','510','512','513','514','515','516','517','518','520','530','531','534','539','540','541','551','557','559','561','562','563','564','567','570','571','572','573','574','575','580','582','585','586','601','602','603','605','606','607','608','609','610','612','614','615','616','617','618','619','620','623','626','628','629','630','631','636','641','646','650','651','657','660','661','662','667','669','678','681','682','701','702','703','704','706','707','708','712','713','714','715','716','717','718','719','720','724','725','726','727','730','731','732','734','737','740','747','754','757','760','762','763','765','769','770','772','773','774','775','779','781','785','786','801','802','803','804','805','806','808','810','812','813','814','815','816','817','818','828','830','831','832','835','838','840','843','845','847','848','850','856','857','858','859','860','862','863','864','865','870','872','878','901','903','904','906','907','908','909','910','912','913','914','915','916','917','918','919','920','925','928','931','936','937','940','941','945','947','949','951','952','954','956','959','970','971','972','973','978','979','980','984','985','989'],
@@ -12,12 +12,11 @@ var mobilePrefixes = {
 };
 
 var landlinePrefixes = {
-    '7': ['495','499','812','843','831','846','861','863','835','843','844','345','351','383','391','421','423','472','473','474','481','482','485','486','487','491','492','493','494','496','498','499','811','814','815','816','817','818','820','821','831','833','834','835','836','841','844','845','846','848','851','855','861','862','863','865','869','871','872','873','877','878','879','881','382','384','385','388','390','391','394','395','401','411','413','415','416','421','423','424','426','427','431','432','433','434','435','436','437','438','439','442','443','444','445','446','447','448','449','451','452','453','454','455','456','457','458','459','460','461','462','463','464','465','466','467','468','469','471','472','473','474','475','476','477','478','481','482','483','484','485','486','487','488','489','492','493','494','495','496','498','499']
+    '7': ['495','499','812','843','831','846','861','863','835','844','345','351','383','391','421','423','472','473','474','481','482','485','486','487','491','492','493','494','496','498','499','811','814','815','816','817','818','820','821','833','834','836','841','845','848','851','855','862','865','869','871','872','873','877','878','879','881','382','384','385','388','390','394','395','401','411','413','415','416','424','426','427','431','432','433','434','435','436','437','438','439','442','443','444','445','446','447','448','449','451','452','453','454','455','456','457','458','459','460','461','462','463','464','465','466','467','468','469','471','475','476','477','478','483','488','489']
 };
 
 function getNumberTypeLocal(phoneNumber, countryCode) {
     var digits = phoneNumber.replace(/\D/g, '');
-    var code = countryCode || digits.substring(0, 1);
     
     if (countryCode === '7' || digits.startsWith('7')) {
         var defCode = digits.substring(1, 4);
@@ -30,7 +29,6 @@ function getNumberTypeLocal(phoneNumber, countryCode) {
         if (defCode === '800') return { text: '☎️ Бесплатный', class: 'type-hotline' };
     }
     
-    // Международные
     for (var cc in mobilePrefixes) {
         if (digits.startsWith(cc)) {
             var national = digits.substring(cc.length);
@@ -46,7 +44,7 @@ function getNumberTypeLocal(phoneNumber, countryCode) {
     return { text: '📞 Неизвестный', class: '' };
 }
 
-// ===== LIBPHONENUMBER (если загрузился) =====
+// ===== LIBPHONENUMBER =====
 function checkPhoneValid(rawNumber, defaultCountry) {
     try {
         if (!window.libphonenumber) return null;
@@ -64,9 +62,6 @@ function getPhoneType(type) {
     if (type === 'PREMIUM_RATE') return { text: '💰 Платный', class: 'type-hotline' };
     return { text: '📞 Неизвестный', class: '' };
 }
-
-
-
 
 // ===== РЕПУТАЦИЯ =====
 function calculateReputation(phoneNumber) {
@@ -226,19 +221,14 @@ function analyzePhone() {
         analyzeRuPhone(rawInput);
     } else {
         analyzeIntlPhone(rawInput);
-            // Проверка типа: сначала libphonenumber, потом локальная база
-    var phoneValid = checkPhoneValid(formattedNumber, 'RU');
-    var typeInfo;
-    if (phoneValid) {
-        typeInfo = getPhoneType(phoneValid.getType());
-    } else {
-        typeInfo = getNumberTypeLocal(cleaned, '7');
-    }
-
     }
 }
 
-
+function analyzeRuPhone(rawInput) {
+    var cleaned = rawInput.replace(/\D/g, '');
+    if (cleaned.length === 11 && cleaned.startsWith('8')) {
+        cleaned = '7' + cleaned.slice(1);
+    }
     if (cleaned.length !== 11 || !cleaned.startsWith('7')) {
         showError('Введен неверный российский номер. Формат: +7 (XXX) XXX-XX-XX или 8XXXXXXXXXX');
         return;
@@ -256,11 +246,14 @@ function analyzePhone() {
 
     var formattedNumber = '+7 (' + defCode + ') ' + cleaned.substring(4, 7) + '-' + cleaned.substring(7, 9) + '-' + cleaned.substring(9, 11);
 
-    // libphonenumber
     var phoneValid = checkPhoneValid(formattedNumber, 'RU');
-    var typeInfo = phoneValid ? getPhoneType(phoneValid.getType()) : getNumberType(cleaned, '7');
+    var typeInfo;
+    if (phoneValid) {
+        typeInfo = getPhoneType(phoneValid.getType());
+    } else {
+        typeInfo = getNumberTypeLocal(cleaned, '7');
+    }
 
-    // Статус
     document.getElementById('resStatus').textContent = phoneValid ? '✓ Валиден' : 'В сети / Валиден';
     document.getElementById('resStatus').className = 'result-value status-valid';
 
@@ -277,7 +270,6 @@ function analyzePhone() {
     document.getElementById('resMnp').textContent = mnp;
     document.getElementById('resTimezone').textContent = 'UTC+3 (МСК)';
 
-    // Тип номера
     var typeEl = document.getElementById('resType');
     typeEl.textContent = typeInfo.text;
     typeEl.className = 'result-value ' + typeInfo.class;
@@ -309,16 +301,15 @@ function analyzeIntlPhone(rawInput) {
         showError('Некорректная длина международного номера.');
         return;
     }
-        var phoneValid = checkPhoneValid(cleaned);
-    var typeInfo;
-    if (phoneValid) {
-        typeInfo = getPhoneType(phoneValid.getType());
-    } else {
-        typeInfo = getNumberTypeLocal(digitsOnly, matchedPrefix.code);
-    }
 
+    var phoneValid = checkPhoneValid(cleaned);
 
-    
+    var matchedPrefix = null;
+    for (var i = 0; i < internationalPrefixes.length; i++) {
+        var p = internationalPrefixes[i];
+        if (digitsOnly.startsWith(p.code)) {
+            if (!matchedPrefix || p.code.length > matchedPrefix.code.length) {
+                matchedPrefix = p;
             }
         }
     }
@@ -346,9 +337,13 @@ function analyzeIntlPhone(rawInput) {
     var rep = calculateReputation(digitsOnly);
     var mnp = calculateMnpStatus(digitsOnly, operator);
 
-    var typeInfo = phoneValid ? getPhoneType(phoneValid.getType()) : { text: '📞 Неизвестный', class: '' };
+    var typeInfo;
+    if (phoneValid) {
+        typeInfo = getPhoneType(phoneValid.getType());
+    } else {
+        typeInfo = getNumberTypeLocal(digitsOnly, matchedPrefix.code);
+    }
 
-    // Статус
     if (phoneValid) {
         document.getElementById('resStatus').textContent = '✓ Валиден';
         document.getElementById('resStatus').className = 'result-value status-valid';
@@ -370,7 +365,6 @@ function analyzeIntlPhone(rawInput) {
     document.getElementById('resMnp').textContent = mnp;
     document.getElementById('resTimezone').textContent = matchedPrefix.tz;
 
-    // Тип номера
     var typeEl = document.getElementById('resType');
     typeEl.textContent = typeInfo.text;
     typeEl.className = 'result-value ' + typeInfo.class;
