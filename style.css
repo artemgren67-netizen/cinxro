@@ -19,6 +19,9 @@ body {
     color: #e0e0e0;
     position: relative;
     overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 /* ===== ГЛАВНЫЙ КОНТЕНТ ===== */
