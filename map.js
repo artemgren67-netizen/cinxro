@@ -137,7 +137,7 @@ function showMap(cityName) {
 
     currentCity = cityName;
     document.getElementById('mapSection').classList.add('show');
-    
+
     renderSvgInto('svgContainer');
     renderSvgInto('modalSvgContainer');
 
@@ -147,16 +147,16 @@ function showMap(cityName) {
     var baseCity = cityName.split(' (')[0];
     var cityData = cityCoords[baseCity] || cityCoords['Москва'];
     var coordText = 'LAT: ' + cityData.lat.toFixed(4) + ' | LNG: ' + cityData.lng.toFixed(4);
-    
+
     document.getElementById('mapCoords').textContent = coordText;
     document.getElementById('modalCoords').textContent = coordText;
 
     var terminal = document.getElementById('mapTerminal');
     var steps = [
-        '&gt; Сканирование каналов РФ...',
-        '&gt; Проверка баз MNP и Репутации...',
-        '&gt; Объект локализован: ' + cityName.toUpperCase(),
-        '&gt; СТАТУС: НАЙДЕН [ОК]'
+        '> Сканирование каналов РФ...',
+        '> Проверка баз MNP и Репутации...',
+        '> Объект локализован: ' + cityName.toUpperCase(),
+        '> СТАТУС: НАЙДЕН [ОК]'
     ];
     var step = 0;
     terminal.innerHTML = steps[0] + '<span class="cursor"></span>';
