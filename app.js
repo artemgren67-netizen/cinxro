@@ -293,7 +293,7 @@ function displayIpResult(data) {
     document.getElementById('resCode').textContent = data.country || 'N/A';
     document.getElementById('resRegion').textContent = data.region || 'Неизвестно';
     document.getElementById('resCity').textContent = data.city || 'Неизвестно';
-    document.getElementById('resOperator').textContent = data.org || data.asn?.name || 'Неизвестно';
+    document.getElementById('resOperator').textContent = data.org || (data.asn && data.asn.name) || 'Неизвестно';
     document.getElementById('resMnp').textContent = 'N/A (IP-адрес)';
     document.getElementById('resTimezone').textContent = data.timezone || 'UTC';
 
@@ -310,7 +310,7 @@ function displayIpResult(data) {
         country: data.country_name || data.country || 'Неизвестно',
         region: data.region || 'Неизвестно',
         city: data.city || 'Неизвестно',
-        operator: data.org || data.asn?.name || 'Неизвестно',
+        operator: data.org || (data.asn && data.asn.name) || 'Неизвестно',
         mnp: 'N/A'
     };
 
@@ -398,8 +398,8 @@ function setMode(mode) {
         label.textContent = 'Введите международный номер';
         btn.textContent = 'Проверить номер';
         sideText.textContent = 'знай с кем общаешься';
-        examples.innerHTML = 'Примеры: <span onclick="setPhone(\'+79031234567\')">+7 903...</span><span onclick="setPhone(\'+380441234567\')">+380 44...</span><span onclick="setPhone(\'+12125551234\')">+1 212...</span>';
-        btn.onclick = analyzePhone;
+        examples.innerHTML = 'Примеры: <span data-phone="+79031234567">+7 903...</span><span data-phone="+380441234567">+380 44...</span><span data-phone="+12125551234">+1 212...</span>';
+        bindExampleClicks();
     } else if (mode === 'ru') {
         document.getElementById('modeRu').classList.add('active');
         icon.innerHTML = '&#127479;&#127482;';
@@ -409,8 +409,8 @@ function setMode(mode) {
         label.textContent = 'Введите российский номер';
         btn.textContent = 'Проверить номер';
         sideText.textContent = 'безопасность превыше всего';
-        examples.innerHTML = 'Примеры: <span onclick="setPhone(\'89031234567\')">8 903...</span><span onclick="setPhone(\'+79221234567\')">+7 922...</span>';
-        btn.onclick = analyzePhone;
+        examples.innerHTML = 'Примеры: <span data-phone="89031234567">8 903...</span><span data-phone="+79221234567">+7 922...</span>';
+        bindExampleClicks();
     } else if (mode === 'ip') {
         document.getElementById('modeIp').classList.add('active');
         icon.innerHTML = '&#127760;';
@@ -420,8 +420,8 @@ function setMode(mode) {
         label.textContent = 'Введите IP-адрес';
         btn.textContent = 'Проверить IP';
         sideText.textContent = 'кто там за экраном';
-        examples.innerHTML = 'Примеры: <span onclick="setPhone(\'8.8.8.8\')">8.8.8.8</span><span onclick="setPhone(\'1.1.1.1\')">1.1.1.1</span>';
-        btn.onclick = analyzeIp;
+        examples.innerHTML = 'Примеры: <span data-phone="8.8.8.8">8.8.8.8</span><span data-phone="1.1.1.1">1.1.1.1</span>';
+        bindExampleClicks();
     }
 
     indicator.style.animation = 'none';
@@ -433,6 +433,14 @@ function setMode(mode) {
     document.getElementById('mapSection').classList.remove('show');
 
     if (menuOpen) toggleMenu();
+}
+
+function bindExampleClicks() {
+    document.querySelectorAll('#examplesBox span').forEach(function(span) {
+        span.addEventListener('click', function() {
+            setPhone(this.getAttribute('data-phone'));
+        });
+    });
 }
 
 function showDonatePage() {
@@ -485,9 +493,48 @@ function showToolSection(id) {
 document.addEventListener('DOMContentLoaded', function() {
     setMode('intl');
 
+    // Гамбургер
     document.getElementById('hamburger').addEventListener('click', toggleMenu);
     document.getElementById('sidebarOverlay').addEventListener('click', toggleMenu);
 
+    // Режимы
+    document.getElementById('modeIntl').addEventListener('click', function() { setMode('intl'); });
+    document.getElementById('modeRu').addEventListener('click', function() { setMode('ru'); });
+    document.getElementById('modeIp').addEventListener('click', function() { setMode('ip'); });
+
+    // Инструменты
+    document.getElementById('toolHistory').addEventListener('click', function() { showToolSection('historySection'); });
+    document.getElementById('toolFavorites').addEventListener('click', function() { showToolSection('favoritesSection'); });
+    document.getElementById('toolExport').addEventListener('click', function() { showToolSection('exportSection'); });
+    document.getElementById('toolDonate').addEventListener('click', showDonatePage);
+
+    // Кнопки
+    document.getElementById('searchBtn').addEventListener('click', analyzePhone);
+    document.getElementById('favBtn').addEventListener('click', addCurrentToFavorites);
+    document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+    document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
+    document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+    document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
+    document.getElementById('backToSearchBtn').addEventListener('click', function() { setMode('intl'); });
+
+    // Карта
+    document.getElementById('mapExpandBtn').addEventListener('click', openMapModal);
+    document.getElementById('mapModalClose').addEventListener('click', closeMapModal);
+    document.getElementById('mapModalOverlay').addEventListener('click', function(e) {
+        if (e.target.id === 'mapModalOverlay') closeMapModal();
+    });
+    document.getElementById('zoomInBtn').addEventListener('click', function() { zoomMap(1.25); });
+    document.getElementById('zoomOutBtn').addEventListener('click', function() { zoomMap(0.8); });
+    document.getElementById('zoomResetBtn').addEventListener('click', resetZoom);
+
+    // Слои карты
+    document.querySelectorAll('.layer-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            changeMapLayer(this.getAttribute('data-layer'), this);
+        });
+    });
+
+    // Enter в поле ввода
     document.getElementById('phoneInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             if (currentMode === 'ip') analyzeIp();
