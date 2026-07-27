@@ -1,4 +1,4 @@
-// Работа с локальным хранилищем (LocalStorage), экспортом и Избранным
+// Работа с локальным хранилищем (LocalStorage), история и избранное
 
 function getStorage(key) {
     try { return JSON.parse(localStorage.getItem('cinxro_' + key)) || []; }
@@ -32,7 +32,7 @@ function toggleFavorite(item) {
 function addCurrentToFavorites() {
     if (!lastAnalyzedData) return;
     toggleFavorite(lastAnalyzedData);
-    alert('Запись сохранена в Избранном!');
+    alert('Номер добавлен в избранное!');
 }
 
 function clearHistory() {
@@ -44,7 +44,7 @@ function renderHistory() {
     var list = document.getElementById('historyList');
     var history = getStorage('history');
     if (history.length === 0) {
-        list.innerHTML = '<div class="empty-msg">История проверок пуста.</div>';
+        list.innerHTML = '<div class="empty-msg">История запросов пуста.</div>';
         return;
     }
     list.innerHTML = history.map(item => `
@@ -54,17 +54,24 @@ function renderHistory() {
                 <div class="meta">${item.country || ''} | ${item.region || ''} | ${item.city || ''}</div>
             </div>
             <div class="item-actions">
-                <button class="icon-btn" onclick="setPhone('${item.number}')">🔍</button>
+                <button class="icon-btn" data-phone="${item.number}">📋</button>
             </div>
         </div>
     `).join('');
+
+    // Bind copy buttons
+    list.querySelectorAll('.icon-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            setPhone(this.getAttribute('data-phone'));
+        });
+    });
 }
 
 function renderFavorites() {
     var list = document.getElementById('favoritesList');
     var favs = getStorage('favorites');
     if (favs.length === 0) {
-        list.innerHTML = '<div class="empty-msg">В избранном пока нет сохраненных номеров.</div>';
+        list.innerHTML = '<div class="empty-msg">В избранном пока ничего нет.</div>';
         return;
     }
     list.innerHTML = favs.map(item => `
@@ -74,11 +81,25 @@ function renderFavorites() {
                 <div class="meta">${item.country || ''} | ${item.region || ''} | ${item.city || ''}</div>
             </div>
             <div class="item-actions">
-                <button class="icon-btn" onclick="setPhone('${item.number}')">🔍</button>
-                <button class="icon-btn" onclick='toggleFavorite(${JSON.stringify(item)})'>❌</button>
+                <button class="icon-btn" data-phone="${item.number}">📋</button>
+                <button class="icon-btn" data-item='${JSON.stringify(item)}'>🗑</button>
             </div>
         </div>
     `).join('');
+
+    // Bind buttons
+    list.querySelectorAll('.icon-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var phone = this.getAttribute('data-phone');
+            var itemStr = this.getAttribute('data-item');
+            if (phone) {
+                setPhone(phone);
+            } else if (itemStr) {
+                var item = JSON.parse(itemStr);
+                toggleFavorite(item);
+            }
+        });
+    });
 }
 
 function downloadFile(content, fileName, contentType) {
@@ -91,19 +112,19 @@ function downloadFile(content, fileName, contentType) {
 
 function exportJSON() {
     var history = getStorage('history');
-    if (!history.length) return alert('История пуста для экспорта!');
+    if (!history.length) return alert('История запросов пуста!');
     downloadFile(JSON.stringify(history, null, 2), 'cinxro_history.json', 'application/json');
 }
 
 function exportCSV() {
     var history = getStorage('history');
-    if (!history.length) return alert('История пуста для экспорта!');
+    if (!history.length) return alert('История запросов пуста!');
     var csv = 'Номер,Репутация,Страна,Регион,Город,Оператор,MNP\n' + 
         history.map(h => `"${h.number}","${h.reputationText}","${h.country}","${h.region}","${h.city}","${h.operator}","${h.mnp}"`).join('\n');
     downloadFile(csv, 'cinxro_history.csv', 'text/csv;charset=utf-8;');
 }
 
 function exportPDF() {
-    if (!lastAnalyzedData) return alert('Сначала выполните поиск номера.');
+    if (!lastAnalyzedData) return alert('Сначала выполните проверку номера.');
     window.print();
 }
