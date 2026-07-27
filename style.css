@@ -503,3 +503,48 @@ body {
     .map-modal-content { width: 95vw; height: 85vh; }
     .export-grid { grid-template-columns: 1fr; }
 }
+/* ===== ФИКС НАЛОЖЕНИЯ ЭЛЕМЕНТОВ ===== */
+
+/* Сайдбар поверх всего */
+.sidebar {
+    z-index: 1002 !important;
+}
+
+/* Оверлей под сайдбаром, но поверх контента */
+.sidebar-overlay {
+    z-index: 1001 !important;
+}
+
+/* Гамбургер поверх всего */
+.hamburger {
+    z-index: 1003 !important;
+}
+
+/* Canvas-фон самый нижний */
+#neuroBg {
+    z-index: -1 !important;
+}
+
+/* Основной контент */
+.main-layout {
+    position: relative;
+    z-index: 1;
+}
+
+/* Логотип и подзаголовок */
+.logo-wrapper, .subtitle, .mode-indicator {
+    position: relative;
+    z-index: 1;
+}
+
+/* Контейнер поиска */
+.container {
+    position: relative;
+    z-index: 1;
+}
+
+/* Футер */
+.footer {
+    position: relative;
+    z-index: 1;
+}
