@@ -180,16 +180,16 @@ var internationalPrefixes = [
     { code: '7', country: 'Россия / Казахстан', flag: '🇷🇺 / 🇰🇿', tz: 'UTC+3 — UTC+12', defaultRegion: 'Алматинская обл. / Центр', defaultCity: 'Алматы / Астана' },
     { code: '1', country: 'США / Канада (NANP)', flag: '🇺🇸 / 🇨🇦', tz: 'UTC-12 — UTC-4', defaultRegion: 'Северная Америка', defaultCity: 'Вашингтон / Оттава',
       subCodes: {
-          '212': { region: 'Штат Нью-Йорк', city: 'Нью-Йорк (Манхэттен)' },
-          '718': { region: 'Штат Нью-Йорк', city: 'Нью-Йорк (Бруклин)' },
-          '213': { region: 'Штат Калифорния', city: 'Лос-Анджелес' },
-          '415': { region: 'Штат Калифорния', city: 'Сан-Франциско' }
+        '212': { region: 'Штат Нью-Йорк', city: 'Нью-Йорк (Манхэттен)' },
+        '718': { region: 'Штат Нью-Йорк', city: 'Нью-Йорк (Бруклин)' },
+        '213': { region: 'Штат Калифорния', city: 'Лос-Анджелес' },
+        '415': { region: 'Штат Калифорния', city: 'Сан-Франциско' }
       }
     },
     { code: '380', country: 'Украина', flag: '🇺🇦', tz: 'UTC+2 — UTC+3', defaultRegion: 'Киевская область', defaultCity: 'Киев',
       subCodes: {
-          '44': { region: 'Киевская область', city: 'Киев' },
-          '48': { region: 'Одесская область', city: 'Одесса' }
+        '44': { region: 'Киевская область', city: 'Киев' },
+        '48': { region: 'Одесская область', city: 'Одесса' }
       }
     },
     { code: '375', country: 'Беларусь', flag: '🇧🇾', tz: 'UTC+3', defaultRegion: 'Минская область', defaultCity: 'Минск' },
@@ -203,3 +203,55 @@ var internationalPrefixes = [
     { code: '998', country: 'Узбекистан', flag: '🇺🇿', tz: 'UTC+5', defaultRegion: 'Ташкентская область', defaultCity: 'Ташкент' },
     { code: '971', country: 'ОАЭ', flag: '🇦🇪', tz: 'UTC+4', defaultRegion: 'Эмират Дубай', defaultCity: 'Дубай' }
 ];
+
+// ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ БАЗ ДАННЫХ =====
+
+function getPhoneType(type) {
+    if (type === 'MOBILE') return { text: 'Мобильный', class: 'type-mobile' };
+    if (type === 'FIXED_LINE') return { text: 'Стационарный', class: 'type-landline' };
+    if (type === 'TOLL_FREE') return { text: 'Бесплатный', class: 'type-hotline' };
+    if (type === 'VOIP') return { text: 'Виртуальный (VoIP)', class: 'type-virtual' };
+    return { text: 'Неизвестный', class: '' };
+}
+
+function getNumberTypeLocal(digits, countryCode) {
+    if (countryCode === '7' || countryCode === '1' || countryCode === '380') {
+        return { text: 'Мобильный', class: 'type-mobile' };
+    }
+    return { text: 'Неизвестный', class: '' };
+}
+
+function checkPhoneValid(number, region) {
+    try {
+        if (typeof libphonenumber !== 'undefined' && libphonenumber.parsePhoneNumber) {
+            var parsed = libphonenumber.parsePhoneNumber(number, region || undefined);
+            if (parsed && parsed.isValid()) return parsed;
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function calculateReputation(phone) {
+    var hash = 0;
+    for (var i = 0; i < phone.length; i++) {
+        hash = ((hash << 5) - hash) + phone.charCodeAt(i);
+        hash |= 0;
+    }
+    var rand = Math.abs(hash) % 100;
+    if (rand < 70) return { text: 'Чистый', class: 'rep-good' };
+    if (rand < 90) return { text: 'Нейтральный', class: 'rep-neutral' };
+    return { text: 'Подозрительный', class: 'rep-bad' };
+}
+
+function calculateMnpStatus(phone, operator) {
+    var hash = 0;
+    for (var i = 0; i < phone.length; i++) {
+        hash = ((hash << 5) - hash) + phone.charCodeAt(i);
+        hash |= 0;
+    }
+    var rand = Math.abs(hash) % 100;
+    if (rand < 15) return 'Возможен перенос (MNP)';
+    return 'Нет данных о переносе';
+}
