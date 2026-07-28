@@ -46,21 +46,32 @@ async function analyzePhone() {
     btn.textContent = 'Сканирование...';
     btn.disabled = true;
 
-    var apiResult = await checkPhoneVeriphone(rawInput);
-
-    if (apiResult && apiResult.status === 'success') {
-        displayApiResult(apiResult, rawInput);
+    if (currentMode === 'ru') {
+        // Для российских номеров локальная база (db.js) даёт более точные
+        // и полные данные (оператор / регион / город), чем бесплатный тариф
+        // внешнего API — который для многих номеров возвращает пустые поля.
+        // Поэтому в режиме "Поиск по России" используем её напрямую,
+        // это же гарантирует, что карта всегда будет показана.
+        analyzeRuPhoneFallback(rawInput);
     } else {
-        console.log('[Fallback] Используется локальная база');
-        if (currentMode === 'ru') {
-            analyzeRuPhoneFallback(rawInput);
+        var apiResult = await checkPhoneVeriphone(rawInput);
+
+        if (apiResult && apiResult.status === 'success' && hasUsefulApiData(apiResult)) {
+            displayApiResult(apiResult, rawInput);
         } else {
+            console.log('[Fallback] Используется локальная база');
             analyzeIntlPhoneFallback(rawInput);
         }
     }
 
     btn.textContent = 'Проверить номер';
     btn.disabled = false;
+}
+
+// Проверяет, вернул ли API реально полезные данные,
+// а не просто "success" с пустыми полями (страна/город/оператор неизвестны)
+function hasUsefulApiData(data) {
+    return !!(data.country_name || data.location || data.carrier);
 }
 
 function displayApiResult(data, rawInput) {
