@@ -22,6 +22,16 @@ function setPhone(val) {
     document.getElementById('phoneInput').value = val;
 }
 
+// Единая точка входа для поиска — выбирает нужный анализ
+// в зависимости от текущего режима (intl / ru / ip)
+function runSearch() {
+    if (currentMode === 'ip') {
+        analyzeIp();
+    } else {
+        analyzePhone();
+    }
+}
+
 // ===== API + FALLBACK: АНАЛИЗ НОМЕРА =====
 
 async function analyzePhone() {
@@ -509,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('toolDonate').addEventListener('click', showDonatePage);
 
     // Кнопки
-    document.getElementById('searchBtn').addEventListener('click', analyzePhone);
+    document.getElementById('searchBtn').addEventListener('click', runSearch);
     document.getElementById('favBtn').addEventListener('click', addCurrentToFavorites);
     document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
     document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
@@ -537,8 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Enter в поле ввода
     document.getElementById('phoneInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            if (currentMode === 'ip') analyzeIp();
-            else analyzePhone();
+            runSearch();
         }
     });
 });
