@@ -74,30 +74,35 @@ function renderFavorites() {
         list.innerHTML = '<div class="empty-msg">В избранном пока ничего нет.</div>';
         return;
     }
-    list.innerHTML = favs.map(item => `
+    list.innerHTML = favs.map((item, idx) => `
         <div class="item-card">
             <div class="item-info">
                 <div class="phone">${item.number}</div>
                 <div class="meta">${item.country || ''} | ${item.region || ''} | ${item.city || ''}</div>
             </div>
             <div class="item-actions">
-                <button class="icon-btn" data-phone="${item.number}">📋</button>
-                <button class="icon-btn" data-item='${JSON.stringify(item)}'>🗑</button>
+                <button class="icon-btn" data-copy-phone="${item.number}">📋</button>
+                <button class="icon-btn" data-remove-idx="${idx}">🗑</button>
             </div>
         </div>
     `).join('');
 
-    // Bind buttons
-    list.querySelectorAll('.icon-btn').forEach(function(btn) {
+    // Bind copy buttons
+    list.querySelectorAll('[data-copy-phone]').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            var phone = this.getAttribute('data-phone');
-            var itemStr = this.getAttribute('data-item');
-            if (phone) {
-                setPhone(phone);
-            } else if (itemStr) {
-                var item = JSON.parse(itemStr);
-                toggleFavorite(item);
-            }
+            setPhone(this.getAttribute('data-copy-phone'));
+        });
+    });
+
+    // Bind delete buttons (по индексу в массиве избранного,
+    // а не через JSON в HTML-атрибуте — так апостроф/кавычки
+    // в данных больше не сломают верстку)
+    list.querySelectorAll('[data-remove-idx]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var idx = parseInt(this.getAttribute('data-remove-idx'), 10);
+            var current = getStorage('favorites');
+            var item = current[idx];
+            if (item) toggleFavorite(item);
         });
     });
 }
