@@ -206,6 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var viewport = document.getElementById('modalMapArea');
     if (!viewport) return;
 
+    // ==== МЫШЬ (десктоп) ====
     viewport.addEventListener('mousedown', function(e) {
         isDragging = true;
         startX = e.clientX - panX; startY = e.clientY - panY;
@@ -219,5 +220,52 @@ document.addEventListener('DOMContentLoaded', function() {
     viewport.addEventListener('wheel', function(e) {
         e.preventDefault();
         if (e.deltaY < 0) { zoomMap(1.15); } else { zoomMap(0.85); }
+    });
+
+    // ==== СЕНСОР (мобильные) ====
+    var pinchStartDist = 0;
+    var pinchStartScale = 1;
+
+    function touchDistance(touches) {
+        var dx = touches[0].clientX - touches[1].clientX;
+        var dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    viewport.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - panX;
+            startY = e.touches[0].clientY - panY;
+        } else if (e.touches.length === 2) {
+            isDragging = false;
+            pinchStartDist = touchDistance(e.touches);
+            pinchStartScale = zoomScale;
+        }
+    }, { passive: true });
+
+    viewport.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 1 && isDragging) {
+            e.preventDefault();
+            panX = e.touches[0].clientX - startX;
+            panY = e.touches[0].clientY - startY;
+            updateModalTransform();
+        } else if (e.touches.length === 2) {
+            e.preventDefault();
+            var newDist = touchDistance(e.touches);
+            if (pinchStartDist > 0) {
+                zoomScale = pinchStartScale * (newDist / pinchStartDist);
+                if (zoomScale < 0.8) zoomScale = 0.8;
+                if (zoomScale > 6) zoomScale = 6;
+                updateModalTransform();
+            }
+        }
+    }, { passive: false });
+
+    viewport.addEventListener('touchend', function(e) {
+        if (e.touches.length === 0) {
+            isDragging = false;
+            pinchStartDist = 0;
+        }
     });
 });
